@@ -22,7 +22,7 @@ export default function NewNoteInput({onAdd}) {
     <div>
       <div 
         id='newNoteContainer' 
-        className={"border-[e0e0e0] border rounded-md max-w-[600px] mb-1 mt-2 mx-auto overflow-hidden transition-shadow" + (isExpanded ? ' shadow-main' : ' shadow-[0_0.5px_5px_-1px_grey]')}
+        className={"border-[e0e0e0] border rounded-md max-w-[600px] mx-auto overflow-hidden transition-shadow my-8" + (isExpanded ? ' shadow-main' : ' shadow-[0_0.5px_5px_-1px_grey]')}
         //min-h-[120px]
         >
         {isExpanded && <input placeholder="Title" className="text-lg outline-none block w-full px-[15px] py-[10px]" value={title} onChange={e=>setTitle(e.target.value)} />}

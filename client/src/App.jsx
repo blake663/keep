@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
 import './App.css';
 import NewNoteInput from './NewNoteInput';
 import { useNewNoteContext } from './new_note_context';
@@ -101,7 +100,8 @@ let initialNotesData = [
 
 function App() {
 
-  const [notesData, setNotesData] = useState(initialNotesData); // give them a height field in a useEffect
+  const [notesData, setNotesData] = useState(initialNotesData);
+  const [heights, setHeights] = useState({});
   const {title, body, collapseAndClear} = useNewNoteContext();
 
   const [numColumns, setNumColumns] = useState();
@@ -109,15 +109,17 @@ function App() {
   const notesContainerRef = useRef();
   const positionsRef = useRef(new Map());
   const noteRefs = useRef(new Map());
+  const [leftMargin, setLeftMargin] = useState(0);
 
 
-  const gap = 8, noteWidth = 240;
+  const gap = 16, noteWidth = 240;
 
   function findNumColumns() {
     const total = wrapperRef.current.clientWidth;
     const newNumColumns = Math.floor((total - gap) / (noteWidth + gap));
     console.log('called find num columns');
     setNumColumns(newNumColumns);
+    setLeftMargin((total - newNumColumns * (noteWidth + gap) - gap) / 2);
   }
   
   useEffect(() => {
@@ -129,27 +131,22 @@ function App() {
   useEffect(() => {
     console.log('useEffect triggered');
     debugger
-    for (const note of notesData) {
-      if (!note.height) {
-        const clientHeight = noteRefs.current.get(note.id).clientHeight;
+    for (const {id} of notesData) {
+      if (heights[id] === undefined || heights[id] === 0) {
+        const clientHeight = noteRefs.current.get(id).clientHeight;
         if (clientHeight) {
-          setNotesData(nd => nd.map(n => (
-            n.id === note.id ?
-              {...n, height: clientHeight} :
-              n
-          )));
+          setHeights(heights => ({...heights, [id]: clientHeight}));
         } else {
           debugger
         }
       }
     }
-    // iterate through notes, id -> ref, add height if missing with setState(old => new)
-  })
+  }, [numColumns, notesData])
 
   function calculatePositions() {
     const columnHeights = Array(numColumns);
     columnHeights.fill(0);
-    for (const note of notesData) {
+    for (const {id} of notesData) {
       let minHeight = Infinity, minPos;
       for (let col = 0; col < numColumns; col++) {
         if (columnHeights[col] < minHeight) {
@@ -157,10 +154,16 @@ function App() {
         }
       }
 
-      positionsRef.current.set(note.id, [(noteWidth+gap) * minPos, minHeight]); // Doesn't need to be a ref; should just be local scoped variable
+      positionsRef.current.set(id, [(noteWidth+gap) * minPos + leftMargin, minHeight]); // Doesn't need to be a ref; should just be local scoped variable
       // console.log(noteRefs.current);
-      if (note.height)
-      columnHeights[minPos] += note.height + gap;
+      if (heights[id])
+      columnHeights[minPos] += heights[id] + gap;
+    }
+
+    // There's obviously a better place for this
+    if (notesContainerRef.current) {
+      notesContainerRef.current.style.minHeight = Math.max(...columnHeights) + 'px';
+      console.log('set notes container min-height to ' + Math.max(...columnHeights));
     }
   }
 
@@ -168,13 +171,18 @@ function App() {
 
   
   function onAdd(title, body) {
-    setNotesData([...notesData, {id: nextId++, title: title, body: body}]);
+    setNotesData([{id: nextId++, title: title, body: body}, ...notesData]);
   }
 
   function onDelete(id) {
     setNotesData(notesData.filter(noteData => (
       noteData.id !== id
-    )))
+    )));
+    setHeights(oldHeights => {
+      const newHeights = {...oldHeights};
+      delete newHeights[id];
+      return newHeights;
+    })
   }
 
   function clickSomewhere(e) {
@@ -200,7 +208,15 @@ function App() {
         search, reload, {numColumns}
       </header>
       <main className='flex w-full min-h-[calc(100vh-64px)]'>
-        <div className='bg-pink-500 w-20 top-16 sticky'></div>
+        <div className='bg-pink-500 w-20 top-16 sticky'>
+          <div className='bg-pink-600 fixed top-16'>
+            <ul>
+              <li>a</li>
+              <li>b</li>
+              <li>c</li>
+            </ul>
+          </div>
+        </div>
         <div ref={wrapperRef} className='flex-1'>
           <NewNoteInput onAdd={onAdd}/>
           <div ref={notesContainerRef} className='mx-auto' >
