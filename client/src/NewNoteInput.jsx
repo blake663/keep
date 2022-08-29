@@ -1,28 +1,70 @@
-import { useNewNoteContext } from "./new_note_context";
+import { useEffect } from "react";
+import { useState } from "react";
+import ColorPicker from "./ColorPicker";
 
-export default function NewNoteInput({onAdd}) {
-  const {title, setTitle, body, setBody, isExpanded, setIsExpanded, collapseAndClear, expand, onBodyChange} = useNewNoteContext();
+export default function NewNoteInput({onAdd, filterColor}) {
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  const defaultNoteColor = 'gray';
+  const [color, setColor] = useState(filterColor || defaultNoteColor);
+  
+  function collapseAndClear() {
+    setTitle('');
+    setBody('');
+    setIsExpanded(false);
+    const textarea = document.querySelector('#newNoteContainer textarea');
+    textarea.style.height = 'auto';
+  }
 
   function handleAdd() {
-    collapseAndClear();
     if (title || body) {
-      onAdd(title, body);
+      onAdd(title, body, color);
     }
+    collapseAndClear();
   }
 
   function handleBodyChange(e) {
     onBodyChange(e);
+    console.log('body is ' + body);
     // https://stephanwagner.me/auto-resizing-textarea-with-vanilla-javascript
     const textarea = document.querySelector('#newNoteContainer textarea');
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
   }
+  
+  function onBodyChange(e) {
+    if (!isExpanded) {
+      setIsExpanded(true);
+    } 
+    setBody(e.target.value);
+  }
+
+  function handleClickSomewhere(e) {
+    const newNoteComponent = document.getElementById('newNoteContainer');
+    if (newNoteComponent.contains(e.target)) {
+      console.log('clicked inside new note component');
+    } else {
+      console.log('clicked outside new note component');
+      handleClickOutside();
+    }
+  }
+
+  function handleClickOutside() {
+    handleAdd();
+  }
+
+  useEffect(() => {
+    document.addEventListener('click', handleClickSomewhere);
+    return () => document.removeEventListener('click', handleClickSomewhere);
+  }, [title, body, color]); // has issue without dependencies, from stale closure?
 
   return (
-    <div>
+    <div className="px-4">
       <div 
         id='newNoteContainer' 
-        className={"border-[e0e0e0] border rounded-md max-w-[600px] mx-auto overflow-hidden transition-shadow my-8" + (isExpanded ? ' shadow-main' : ' shadow-[0_0.5px_5px_-1px_grey]')}
+        className={"border-[e0e0e0] border rounded-lg max-w-[600px] mx-auto overflow-hidden transition-shadow my-8" + (isExpanded ? ' shadow-main' : ' shadow-[0_0.5px_5px_-1px_grey]')}
         //min-h-[120px]
         >
         {isExpanded && <input placeholder="Title" className="text-lg outline-none block w-full px-[15px] py-[10px]" value={title} onChange={e=>setTitle(e.target.value)} />}
@@ -37,11 +79,12 @@ export default function NewNoteInput({onAdd}) {
             rows="1"
             value={body}
             onChange={handleBodyChange}
-            onClick={expand}
+            onClick={()=>setIsExpanded(true)}
           />
         </div>
         {isExpanded && 
-          <div>
+          <div className="flex justify-between items-center ml-4">
+            <ColorPicker color={color} setColor={setColor} />
             <button onClick={()=>handleAdd()} className="ml-auto mr-3 mb-1 block px-5 py-1 hover:bg-slate-50 rounded-sm">Close</button>
           </div>
         }
