@@ -113,7 +113,7 @@ export default function App() {
     )));
   }
 
-  // TEMPORARY (use a reducer)
+  // TEMPORARY (use a reducer (maybe))
   function setColor(noteId, color) {
     setNotes(notes.map(note => note.id === noteId ? {...note, color} : note));
   }

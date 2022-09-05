@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import NewNoteInput from './NewNoteInput';
 import Note from './Note';
 
@@ -29,7 +29,8 @@ export default function Main({ filterColor='', setColor, notes, onDelete, onAdd 
     return () => window.removeEventListener('resize', findNumColumns);
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    // this still could cause a jump because it changes the layout via changing the state, not changing the DOM directly
     console.log('useEffect triggered');
     for (const {id} of notes) {
       if (heights[id] === undefined || heights[id] === 0) {
@@ -81,7 +82,7 @@ export default function Main({ filterColor='', setColor, notes, onDelete, onAdd 
   return <>
     <div ref={wrapperRef} className='flex-1'>
       <NewNoteInput onAdd={onAdd} filterColor={filterColor} />
-      <div ref={notesContainerRef} className='mx-auto' >
+      <div ref={notesContainerRef} className='mx-auto transition-[min-height] duration-200 ease-in-out' >
         {notes.map(({id, title, body, color}) => {
           const position = positionsRef.current.get(id);
           if (position) {
